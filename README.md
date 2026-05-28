@@ -19,6 +19,34 @@ The extension works by fetching every leaf of a book, constructing a PDF stream 
 * Download multiple books in parallel
 * multiple options configurable
 
+## Install from source (Load unpacked)
+
+The `isrc/` (Chromium / Edge) and `imoz/` (Firefox) folders use **symlinks** into `core/`. That works on Linux and macOS with a normal `git clone`.
+
+On **Windows**, a ZIP download or Git without symlink support turns those links into tiny text files. Edge may then report:
+
+> Localisation used, but default_locale wasn't specified in the manifest.
+
+even though `default_locale` is present. Fix it by building a flat copy and loading that folder instead:
+
+```powershell
+cd internet_archive_downloader
+.\scripts\prepare-unpacked.ps1
+```
+
+Then in Edge → Extensions → **Load unpacked** → choose `build\isrc-unpacked`.
+
+Or with Python 3:
+
+```bash
+python scripts/prepare_unpacked.py isrc
+# Load unpacked → build/isrc-unpacked
+```
+
+For Firefox: `python scripts/prepare_unpacked.py imoz` → load `build/imoz-unpacked/manifest.json` via `about:debugging`.
+
+Alternatively, enable [Windows Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development) and clone with symlinks: `git -c core.symlinks=true clone …`, then load `isrc/` directly.
+
 ## Install manually
 Install as the following directions supports automatic updates when new versions are available.
 
