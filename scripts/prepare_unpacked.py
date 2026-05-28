@@ -8,15 +8,39 @@ import os
 import shutil
 import sys
 
+_STUB_MAX_BYTES = 512
+
+
+def _resolve_link_target(src: str) -> str | None:
+    """Return real path for symlinks and Git symlink stubs (common on Windows)."""
+    src = os.path.abspath(src)
+    if os.path.islink(src):
+        target = os.readlink(src)
+        if not os.path.isabs(target):
+            target = os.path.normpath(os.path.join(os.path.dirname(src), target))
+        return target if os.path.exists(target) else None
+    if not os.path.isfile(src) or os.path.islink(src):
+        return None
+    try:
+        size = os.path.getsize(src)
+    except OSError:
+        return None
+    if size == 0 or size > _STUB_MAX_BYTES:
+        return None
+    with open(src, encoding="utf-8", errors="ignore") as handle:
+        hint = handle.read().strip().replace("/", os.sep)
+    if not hint or "\n" in hint or "\r" in hint:
+        return None
+    if not (hint.startswith("..") or hint.startswith("." + os.sep)):
+        return None
+    target = os.path.normpath(os.path.join(os.path.dirname(src), hint))
+    return target if os.path.exists(target) else None
+
 
 def copy_resolved(src: str, dst: str) -> None:
     src = os.path.abspath(src)
-    if os.path.islink(src):
-        link_target = os.readlink(src)
-        if not os.path.isabs(link_target):
-            link_target = os.path.normpath(
-                os.path.join(os.path.dirname(src), link_target)
-            )
+    link_target = _resolve_link_target(src)
+    if link_target is not None:
         copy_resolved(link_target, dst)
         return
     if os.path.isdir(src):
